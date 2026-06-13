@@ -29,16 +29,159 @@ VectorStoreManager       ← FAISS index + similarity retriever
 
 ---
 
+## Code flow (step-by-step)
+
+This section walks through the runtime flow used by the CLI entry (`app.py`) with concrete examples of the calls and where they're implemented.
+
+1) Validate configuration
+
+```
+from config_validator import validate_config
+validate_config()
+```
+
+Implemented in `config_validator.py`. Ensures required environment variables and keys are present before proceeding.
+
+2) Load documents
+
+```
+from loaders.document_loader import load_document
+documents = load_document("data/sample_document.txt")
+```
+
+`load_document` (in `loaders/document_loader.py`) reads the source file(s) and returns a list of document objects used downstream.
+
+3) Prepare embeddings and chunk documents
+
+```
+from embeddings.embedding_factory import get_embeddings
+from chunkers.semantic_chunker import semantic_chunk_documents
+
+embeddings = get_embeddings()
+chunks = semantic_chunk_documents(documents, embeddings)
+```
+
+`get_embeddings()` returns a provider-backed embedding client; `semantic_chunk_documents` (in `chunkers/semantic_chunker.py`) performs semantic splitting and returns chunks ready for indexing.
+
+4) Create vector store and retriever
+
+```
+from vectorstore.faiss_store import create_vector_store, get_retriever
+
+vectorstore = create_vector_store(chunks, embeddings)
+retriever = get_retriever(vectorstore)
+```
+
+This builds the FAISS index and exposes a `retriever` used by the RAG chain.
+
+5) Initialize the LLM
+
+```
+from embeddings.llm_factory import get_llm
+
+llm = get_llm()
+```
+
+`get_llm()` returns the language model instance (OpenAI/Google) used by both the chain and the agent.
+
+6) Build the RAG chain
+
+```
+from chains.rag_chain import build_rag_chain
+
+rag_chain = build_rag_chain(retriever, llm)
+```
+
+The RAG chain composes retrieval + prompt templates + the LLM to answer questions strictly from retrieved context.
+
+7) Create tools and the agent
+
+```
+from tools.search_tool import create_search_tool
+from tools.calculator_tool import calculator
+from agents.rag_agent import build_agent
+
+search_tool = create_search_tool(rag_chain)
+tools = [search_tool, calculator]
+agent = build_agent(llm, tools)
+```
+
+`create_search_tool` wraps the RAG chain as a tool; `calculator` is a safe arithmetic tool. `build_agent` wires the LLM + tools into a tool-calling agent.
+
+8) Wrap agent with memory and run interactive loop
+
+```
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from memory.memory_manager import get_session_history
+
+agent_with_memory = RunnableWithMessageHistory(agent, get_session_history, input_messages_key="messages")
+
+response = agent_with_memory.invoke({"messages": [("user", "What is the summary?")]}, config={"configurable": {"session_id": "user_1"}})
+```
+
+`RunnableWithMessageHistory` integrates per-session memory (see `memory/memory_manager.py`) so conversations persist across turns.
+
+9) Text extraction and output
+
+```
+def extract_text(response):
+    content = response["messages"][-1].content
+    if isinstance(content, list):
+        return content[0].get("text", "")
+    return content
+
+print("Assistant:", extract_text(response))
+```
+
+The helper `extract_text` (used in `app.py`) normalises the runnable response into plain text for display.
+
+The above steps are executed in order in `app.py` (see the `main()` function). Use these snippets as a reference when invoking the functionality programmatically or reading through the implementation files.
+
+
 ## Project structure
 
 ```
 rag-genai-project/
-├── app.py              # All layers + CLI entry point
-├── config.py           # Centralised configuration (env-driven)
+├── app.py
+├── config.py
+├── config_validator.py
 ├── requirements.txt
-├── .env.example        # Copy to .env and fill in your keys
-└── data/
-    └── sample_document.pdf   # Drop your document here
+├── .env.example
+├── README.md
+├── SETUP_GUIDE.md
+├── SETUP_GUIDE.txt
+├── agents/
+│   ├── __init__.py
+│   └── rag_agent.py
+├── chains/
+│   ├── __init__.py
+│   └── rag_chain.py
+├── chunkers/
+│   ├── __init__.py
+│   └── semantic_chunker.py
+├── data/
+│   └── sample_document.txt
+├── embeddings/
+│   ├── __init__.py
+│   ├── embedding_factory.py
+│   └── llm_factory.py
+├── loaders/
+│   ├── __init__.py
+│   └── document_loader.py
+├── memory/
+│   ├── __init__.py
+│   └── memory_manager.py
+├── prompts/
+│   ├── __init__.py
+│   ├── agent_prompt.py
+│   └── rag_prompt.py
+├── tools/
+│   ├── __init__.py
+│   ├── calculator_tool.py
+│   └── search_tool.py
+└── vectorstore/
+     ├── __init__.py
+     └── faiss_store.py
 ```
 
 ---

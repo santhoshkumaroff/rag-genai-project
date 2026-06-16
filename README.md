@@ -2,6 +2,8 @@
 
 Production-style Retrieval Augmented Generation system built with LangChain, FAISS, and Google / OpenAI LLMs.
 
+For the multi-agent LangGraph supervisor, worker agents, delegation tools, and checkpoint memory flow, see `LANGGRAPH_README.md`.
+
 ---
 
 ## Architecture

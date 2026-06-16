@@ -1,0 +1,124 @@
+# app.py
+import sys
+from config_validator import validate_config
+from loaders.document_loader import load_document
+from chunkers.semantic_chunker import semantic_chunk_documents
+from embeddings.embedding_factory import get_embeddings
+from embeddings.llm_factory import get_llm
+from vectorstore.faiss_store import create_vector_store, get_retriever
+from chains.rag_chain import build_rag_chain
+from tools.calculator_tool import calculator
+
+# Imports your newly updated Multi-Agent orchestrator
+from agents.rag_agent import build_agent
+
+
+def main():
+    # 1. Validate environment configuration strings
+    validate_config()
+
+    print("Loading documents...")
+    documents = load_document("data/sample_document.txt")
+
+    print("Chunking documents...")
+    embeddings = get_embeddings()
+    chunks = semantic_chunk_documents(documents, embeddings)
+
+    print("Creating vector store...")
+    vectorstore = create_vector_store(chunks, embeddings)
+    retriever = get_retriever(vectorstore)
+
+    # 2. Initialize LLM Engine
+    llm = get_llm()
+
+    # 3. Assemble Core RAG Processing Logic
+    rag_chain = build_rag_chain(retriever, llm)
+
+    # 4. Instantiate Compiled Multi-Agent State Machine
+    agent_system = build_agent(llm, rag_chain, calculator)
+
+    print("\n=======================================================")
+    print("🚀 Multi-Agent LangGraph RAG System Online")
+    print("Specialists Active: [document_expert, math_expert]")
+    print("Commands:")
+    print("  'clear' -> Reset session memory (Start fresh)")
+    print("  'exit'  -> Quit the application session.")
+    print("=======================================================\n")
+
+    # Base session tracking state
+    session_counter = 1
+    thread_id = f"production_user_session_{session_counter}"
+
+    while True:
+        try:
+            query = input("User: ").strip()
+            
+            if not query:
+                continue
+
+            if query.lower() == "exit":
+                print("Shutting down agent execution loop. Goodbye!")
+                break
+
+            # 🔄 Clear Memory / Start Stop Rule
+            if query.lower() == "clear":
+                session_counter += 1
+                thread_id = f"production_user_session_{session_counter}"
+                print(f"🧹 Session memory wiped! Started a fresh session: {thread_id}\n")
+                continue
+
+            # Execution block mapping out the configuration parameters
+            config = {
+                "configurable": {"thread_id": thread_id},
+                "recursion_limit": 15  # 🛑 Circuit Breaker: Prevents loops from exceeding 15 calls
+            }
+
+            # Send prompt down into the compiled graph engine state key ("messages")
+            response = agent_system.invoke(
+                {
+                    "messages": [
+                        ("user", query)
+                    ]
+                },
+                config=config,
+            )
+
+            # Output processed response string block
+            print(f"Assistant: {extract_text(response)}\n")
+
+        except KeyboardInterrupt:
+            print("\nSession interrupted via terminal. Exiting.")
+            sys.exit(0)
+        except Exception as e:
+            # Captures and alerts you if a recursion/loop limit was violated
+            if "recursion_limit" in str(e).lower():
+                print("Assistant: 🛑 [Safety Stop] This request is too complex and triggered an infinite loop safety breaker.\n")
+            else:
+                print(f"An unexpected exception error occurred: {e}\n")
+
+
+def extract_text(response: dict) -> str:
+    """
+    Safely navigates the compiled graph's historical state dictionary 
+    to extract the string content of the final AI message block.
+    """
+    if "messages" not in response or not response["messages"]:
+        return "Error: No system output state received."
+
+    # Grab the terminal message appended to the state graph list sequence
+    final_message = response["messages"][-1]
+    
+    # Handle Duck Typing for LangChain Message types vs raw dict structures
+    content = final_message.content if hasattr(final_message, 'content') else final_message.get("content", "")
+
+    # Account for list structures or standard text block outputs
+    if isinstance(content, list):
+        if len(content) > 0 and isinstance(content[0], dict):
+            return content[0].get("text", "")
+        return str(content)
+
+    return content
+
+
+if __name__ == "__main__":
+    main()

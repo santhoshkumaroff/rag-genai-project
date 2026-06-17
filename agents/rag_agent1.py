@@ -1,4 +1,4 @@
-from langchain.agents import create_agent
+from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.tools import tool
 
@@ -8,18 +8,16 @@ def build_agent(llm, rag_chain, calculator_tool):
 
     search_tool = create_search_tool(rag_chain)
 
-    doc_agent = create_agent(
+    doc_agent = create_react_agent(
         model=llm,
         tools=[search_tool],
-        name="document_expert",
-        system_prompt="You are an expert at retrieving and summarizing context from uploaded documents.",
+        prompt="You are an expert at retrieving and summarizing context from uploaded documents.",
     )
 
-    math_agent = create_agent(
+    math_agent = create_react_agent(
         model=llm,
         tools=[calculator_tool],
-        name="math_expert",
-        system_prompt="You are a precise calculator assistant.",
+        prompt="You are a precise calculator assistant.",
     )
 
     @tool
@@ -36,11 +34,11 @@ def build_agent(llm, rag_chain, calculator_tool):
 
     memory = MemorySaver()
 
-    supervisor_agent = create_agent(
+    supervisor_agent = create_react_agent(
         model=llm,
         tools=[delegate_to_document_expert, delegate_to_math_expert],
         checkpointer=memory,
-        system_prompt=(
+        prompt=(
             "You are a team supervisor. Delegate tasks to document_expert or math_expert. "
             "Summarize their responses for the user."
         ),

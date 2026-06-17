@@ -1,23 +1,18 @@
 from langchain_core.tools import tool
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_community.tools import DuckDuckGoSearchResults
 from models.schemas import ToolResponse
 
-
-tavily_search = TavilySearchResults(max_results=3)
+duckduckgo_search = DuckDuckGoSearchResults(max_results=3)
 
 
 @tool
 async def web_search(query: str) -> str:
-    """Search the web for real-time information using Tavily"""
+    """Search the web for real-time information using DuckDuckGo"""
     try:
-        results = await tavily_search.ainvoke(query)
-        formatted = "\n\n".join(
-            f"**{r.get('title', 'No title')}**\n{r.get('content', '')}"
-            for r in results
-        )
+        results = await duckduckgo_search.ainvoke(query)
         response = ToolResponse(
             tool_name="web_search",
-            result=formatted if formatted else "No results found",
+            result=results if results else "No results found",
             status="success",
         )
         return response.result

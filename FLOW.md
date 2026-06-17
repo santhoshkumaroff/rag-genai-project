@@ -23,7 +23,7 @@ Complete execution flow of the Multi-Agent LangGraph RAG System.
 |  |  |                  |  |              |  |                |  |    |
 |  |  | +--------------+ |  | +----------+ |  | +------------+ |  |    |
 |  |  | |search_documents| |  | |calculator| |  | | web_search | |  |    |
-|  |  | |web_search    | |  | +----------+ |  | | (Tavily)   | |  |    |
+|  |  | |web_search    | |  | +----------+ |  | | (DuckDuckGo)| |  |    |
 |  |  | +------+-------+ |  |              |  | +------------+ |  |    |
 |  |  |        |         |  |              |  |                |  |    |
 |  |  |        v         |  |              |  |                |  |    |
@@ -210,7 +210,7 @@ User Input: "What was the Q3 revenue?"
 |       +---> web_search.ainvoke()                              |
 |                 |                                             |
 |                 v                                             |
-|            TavilySearchResults                                |
+|            DuckDuckGoSearchResults                           |
 |                 |                                             |
 |                 v                                             |
 |            Format + return results                            |
@@ -353,9 +353,9 @@ Output: "Invalid calculation"  (Blocked safely)
 
 ---
 
-### 3. web_search (Tavily Real-Time Search)
+### 3. web_search (DuckDuckGo Real-Time Search)
 
-Searches the web for real-time information using Tavily API.
+Searches the web for real-time information using DuckDuckGo (free, no API key).
 
 ```
 Input:  "What is the latest news about AI?"
@@ -365,12 +365,11 @@ Execution:
   |  web_search.ainvoke("What is the latest news about AI?")   |
   |       |                                                   |
   |       v                                                   |
-  |  TavilySearchResults(max_results=3).ainvoke(query)        |
+  |  DuckDuckGoSearchResults(max_results=3).ainvoke(query)     |
   |       |                                                   |
-  |       |   API Call to Tavily:                             |
-  |       |   GET https://api.tavily.com/search               |
-  |       |   Params: query="What is the latest news about    |
-  |       |           AI?", max_results=3                     |
+  |       |   Search via DuckDuckGo:                           |
+  |       |   Query: "What is the latest news about AI?"       |
+  |       |   Max results: 3                                   |
   |       |                                                   |
   |       v                                                   |
   |  Raw Results:                                             |
@@ -413,7 +412,7 @@ Execution:
   |  web_search.ainvoke("xyz123 nonesense query")              |
   |       |                                                   |
   |       v                                                   |
-  |  TavilySearchResults(max_results=3).ainvoke(query)        |
+  |  DuckDuckGoSearchResults(max_results=3).ainvoke(query)     |
   |       |                                                   |
   |       v                                                   |
   |  Raw Results: []  (Empty array)                           |
@@ -533,7 +532,7 @@ Execution:
   |       |   | web_search.ainvoke(query)                |   |
   |       |   |           |                               |   |
   |       |   |           v                               |   |
-  |       |   | TavilySearchResults.ainvoke()            |   |
+  |       |   | DuckDuckGoSearchResults.ainvoke()         |   |
   |       |   |           |                               |   |
   |       |   |           v                               |   |
   |       |   | Returns: "Apple (AAPL) is currently      |   |
@@ -651,7 +650,7 @@ Raw Document
 +--------------------------------------+------------------------------------------+
 | tools/calculator_tool.py             | Async safe math evaluator                |
 +--------------------------------------+------------------------------------------+
-| tools/web_search_tool.py             | Async Tavily web search                  |
+| tools/web_search_tool.py             | Async DuckDuckGo web search              |
 +--------------------------------------+------------------------------------------+
 | agents/rag_agent.py                  | Supervisor + 3 worker agents             |
 |                                      | (create_agent)                           |

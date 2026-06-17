@@ -3,7 +3,6 @@ langchain-core
 langchain-community
 langchain-google-genai
 langchain-experimental
-langchain-tavily
 langgraph
 pydantic
 pydantic-settings
@@ -11,3 +10,4 @@ faiss-cpu
 pypdf
 python-dotenv
 sentence-transformers
+duckduckgo-search

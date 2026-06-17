@@ -47,7 +47,7 @@ async def main():
 
     print("\n=======================================================")
     print("Multi-Agent LangGraph RAG System Online")
-    print("Specialists Active: [document_expert, math_expert]")
+    print("Specialists Active: [document_expert, math_expert, web_expert]")
     print("Type 'exit' to quit the application session.")
     print("=======================================================\n")
 

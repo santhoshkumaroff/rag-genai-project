@@ -1,6 +1,11 @@
 langchain
+langchain-core
 langchain-community
 langchain-google-genai
+langchain-experimental
+langgraph
+pydantic
+pydantic-settings
 faiss-cpu
 pypdf
 python-dotenv
